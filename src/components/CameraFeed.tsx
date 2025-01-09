@@ -84,34 +84,37 @@ const CameraFeed: React.FC<CameraFeedProps> = ({ onFrame, onFaceDetection }) => 
         if (result.faces && result.faces.length > 0) {
           setFaceDetected(true);
           
-          // Draw rectangle for each detected face
-          const faceWidth = canvas.width * 0.5;
-          const faceHeight = canvas.height * 0.5;
-          const x = (canvas.width - faceWidth) / 2;
-          const y = (canvas.height - faceHeight) / 2;
+          // Only draw frame and label if attendance hasn't been marked
+          if (!attendanceMarked) {
+            // Draw rectangle for each detected face
+            const faceWidth = canvas.width * 0.5;
+            const faceHeight = canvas.height * 0.5;
+            const x = (canvas.width - faceWidth) / 2;
+            const y = (canvas.height - faceHeight) / 2;
 
-          const isKnownFace = result.faces[0] !== "Unknown";
-          context.strokeStyle = isKnownFace ? "#22c55e" : "#ef4444";
-          context.lineWidth = 3;
-          context.strokeRect(x, y, faceWidth, faceHeight);
+            const isKnownFace = result.faces[0] !== "Unknown";
+            context.strokeStyle = isKnownFace ? "#22c55e" : "#ef4444";
+            context.lineWidth = 3;
+            context.strokeRect(x, y, faceWidth, faceHeight);
 
-          // Draw name label above the frame
-          const name = result.faces[0];
-          setCurrentName(name);
-          context.fillStyle = isKnownFace ? "#22c55e" : "#ef4444";
-          context.font = "24px Arial";
-          context.textAlign = "center";
-          context.fillText(name, x + faceWidth / 2, y - 10);
+            // Draw name label above the frame
+            const name = result.faces[0];
+            setCurrentName(name);
+            context.fillStyle = isKnownFace ? "#22c55e" : "#ef4444";
+            context.font = "24px Arial";
+            context.textAlign = "center";
+            context.fillText(name, x + faceWidth / 2, y - 10);
 
-          // Mark attendance if face is recognized and not already marked
-          if (isKnownFace && !attendanceMarked) {
-            onFaceDetection(result.faces);
-            setAttendanceMarked(true);
-            toast({
-              title: "Attendance Marked",
-              description: `Welcome ${name}! Your attendance has been recorded.`,
-              duration: 5000,
-            });
+            // Mark attendance if face is recognized and not already marked
+            if (isKnownFace && !attendanceMarked) {
+              onFaceDetection(result.faces);
+              setAttendanceMarked(true);
+              toast({
+                title: "Attendance Marked",
+                description: `Welcome ${name}! Your attendance has been recorded.`,
+                duration: 5000,
+              });
+            }
           }
         } else {
           setFaceDetected(false);
