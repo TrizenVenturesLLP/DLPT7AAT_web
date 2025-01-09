@@ -17,6 +17,7 @@ const CameraFeed: React.FC<CameraFeedProps> = ({ onFrame, onFaceDetection }) => 
   const [attendanceMarked, setAttendanceMarked] = useState(false);
   const { toast } = useToast();
   const [faceDetected, setFaceDetected] = useState(false);
+  const [currentName, setCurrentName] = useState<string>("");
 
   useEffect(() => {
     let stream: MediaStream | null = null;
@@ -60,7 +61,7 @@ const CameraFeed: React.FC<CameraFeedProps> = ({ onFrame, onFaceDetection }) => 
 
   useEffect(() => {
     const captureFrame = async () => {
-      if (!videoRef.current || !canvasRef.current || !isActive || attendanceMarked) return;
+      if (!videoRef.current || !canvasRef.current || !isActive) return;
 
       const canvas = canvasRef.current;
       const video = videoRef.current;
@@ -70,7 +71,6 @@ const CameraFeed: React.FC<CameraFeedProps> = ({ onFrame, onFaceDetection }) => 
 
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      context.drawImage(video, 0, 0);
 
       // Clear previous drawings
       context.clearRect(0, 0, canvas.width, canvas.height);
@@ -90,22 +90,32 @@ const CameraFeed: React.FC<CameraFeedProps> = ({ onFrame, onFaceDetection }) => 
           const x = (canvas.width - faceWidth) / 2;
           const y = (canvas.height - faceHeight) / 2;
 
-          context.strokeStyle = result.faces[0] !== "Unknown" ? "#22c55e" : "#ef4444";
+          const isKnownFace = result.faces[0] !== "Unknown";
+          context.strokeStyle = isKnownFace ? "#22c55e" : "#ef4444";
           context.lineWidth = 3;
           context.strokeRect(x, y, faceWidth, faceHeight);
 
-          // Mark attendance if face is recognized
-          if (result.faces[0] !== "Unknown" && !attendanceMarked) {
+          // Draw name label above the frame
+          const name = result.faces[0];
+          setCurrentName(name);
+          context.fillStyle = isKnownFace ? "#22c55e" : "#ef4444";
+          context.font = "24px Arial";
+          context.textAlign = "center";
+          context.fillText(name, x + faceWidth / 2, y - 10);
+
+          // Mark attendance if face is recognized and not already marked
+          if (isKnownFace && !attendanceMarked) {
             onFaceDetection(result.faces);
             setAttendanceMarked(true);
             toast({
               title: "Attendance Marked",
-              description: `Welcome ${result.faces[0]}! Your attendance has been recorded.`,
+              description: `Welcome ${name}! Your attendance has been recorded.`,
               duration: 5000,
             });
           }
         } else {
           setFaceDetected(false);
+          setCurrentName("");
         }
       } catch (error) {
         console.error("Error processing frame:", error);
@@ -143,7 +153,7 @@ const CameraFeed: React.FC<CameraFeedProps> = ({ onFrame, onFaceDetection }) => 
                 {attendanceMarked ? (
                   <>
                     <CheckCircle className="w-4 h-4" />
-                    <span className="text-sm">Marked</span>
+                    <span className="text-sm">Marked: {currentName}</span>
                   </>
                 ) : faceDetected ? (
                   <>
@@ -168,7 +178,6 @@ const CameraFeed: React.FC<CameraFeedProps> = ({ onFrame, onFaceDetection }) => 
           className={`${
             isActive ? "bg-red-500 hover:bg-red-600" : "bg-primary hover:bg-primary/90"
           } text-white transition-colors duration-200`}
-          disabled={attendanceMarked}
         >
           <Camera className="w-4 h-4 mr-2" />
           {isActive ? "Stop Camera" : "Start Camera"}
