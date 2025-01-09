@@ -3,12 +3,14 @@ import { useToast } from "@/components/ui/use-toast";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, Camera, CheckCircle } from "lucide-react";
+import { processFrame } from "@/services/api";
 
 interface CameraFeedProps {
   onFrame: (frame: string) => void;
+  onFaceDetection: (faces: string[]) => void;
 }
 
-const CameraFeed: React.FC<CameraFeedProps> = ({ onFrame }) => {
+const CameraFeed: React.FC<CameraFeedProps> = ({ onFrame, onFaceDetection }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isActive, setIsActive] = useState(false);
   const { toast } = useToast();
@@ -55,7 +57,7 @@ const CameraFeed: React.FC<CameraFeedProps> = ({ onFrame }) => {
   }, [isActive, toast]);
 
   useEffect(() => {
-    const captureFrame = () => {
+    const captureFrame = async () => {
       if (videoRef.current && canvasRef.current && isActive) {
         const canvas = canvasRef.current;
         const video = videoRef.current;
@@ -67,13 +69,22 @@ const CameraFeed: React.FC<CameraFeedProps> = ({ onFrame }) => {
           context.drawImage(video, 0, 0);
           const frame = canvas.toDataURL("image/jpeg");
           onFrame(frame);
+          
+          try {
+            const result = await processFrame(frame);
+            if (result.faces) {
+              onFaceDetection(result.faces);
+            }
+          } catch (error) {
+            console.error("Error processing frame:", error);
+          }
         }
       }
     };
 
     const interval = setInterval(captureFrame, 1000);
     return () => clearInterval(interval);
-  }, [isActive, onFrame]);
+  }, [isActive, onFrame, onFaceDetection]);
 
   return (
     <Card className="p-4 w-full max-w-2xl mx-auto bg-white shadow-lg animate-fadeIn">

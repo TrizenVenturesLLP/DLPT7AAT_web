@@ -9,23 +9,21 @@ const Index = () => {
   const [engagement, setEngagement] = useState(100);
   const { toast } = useToast();
 
-  // Simulate backend responses
   const handleFrame = (frame: string) => {
-    // Simulate face recognition response
-    setTimeout(() => {
-      const recognized = Math.random() > 0.1;
-      if (!recognized) {
+    // Frame is now processed in CameraFeed component
+    console.log("Frame captured");
+  };
+
+  const handleFaceDetection = (faces: string[]) => {
+    faces.forEach(face => {
+      if (face !== "Unknown") {
         toast({
-          title: "Face Not Detected",
-          description: "Please ensure your face is visible in the camera",
-          variant: "destructive",
+          title: "Student Detected",
+          description: `Attendance marked for ${face}`,
+          duration: 3000,
         });
       }
-    }, 500);
-
-    // Simulate engagement analysis
-    const newEngagement = Math.max(60, Math.min(100, engagement + (Math.random() - 0.5) * 10));
-    setEngagement(Math.round(newEngagement));
+    });
   };
 
   return (
@@ -46,7 +44,7 @@ const Index = () => {
 
         <div className="grid gap-6 md:grid-cols-[2fr,1fr]">
           <div className="space-y-6">
-            <CameraFeed onFrame={handleFrame} />
+            <CameraFeed onFrame={handleFrame} onFaceDetection={handleFaceDetection} />
           </div>
           
           <div className="space-y-6">
