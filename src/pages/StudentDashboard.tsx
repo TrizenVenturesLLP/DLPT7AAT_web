@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import CameraFeed from "@/components/CameraFeed";
 import EngagementIndicator from "@/components/EngagementIndicator";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
 import { AlertTriangle, BookOpen } from "lucide-react";
 
