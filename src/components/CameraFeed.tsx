@@ -94,6 +94,19 @@ const CameraFeed: React.FC<CameraFeedProps> = ({
               onFaceDetection(result.faces);
               setAttendanceMarked(true);
               setCurrentName(result.faces[0]);
+              
+              // Draw colored frame and name
+              const frameColor = '#4CAF50';
+              context.strokeStyle = frameColor;
+              context.lineWidth = 3;
+              context.strokeRect(50, 50, canvas.width - 100, canvas.height - 100);
+              
+              // Draw name label
+              context.fillStyle = frameColor;
+              context.fillRect(50, 20, 200, 30);
+              context.fillStyle = 'white';
+              context.font = '16px Arial';
+              context.fillText(result.faces[0], 60, 40);
             }
           }
         } else {
@@ -101,7 +114,6 @@ const CameraFeed: React.FC<CameraFeedProps> = ({
           setCurrentName("");
         }
 
-        // Update engagement
         if (onEngagementUpdate && result.engagement !== undefined) {
           onEngagementUpdate(result.engagement, result.remarks || "");
         }
