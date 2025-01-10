@@ -8,9 +8,14 @@ import { processFrame } from "@/services/api";
 interface CameraFeedProps {
   onFrame: (frame: string) => void;
   onFaceDetection: (faces: string[]) => void;
+  onEngagementUpdate?: (score: number, remarks: string) => void;
 }
 
-const CameraFeed: React.FC<CameraFeedProps> = ({ onFrame, onFaceDetection }) => {
+const CameraFeed: React.FC<CameraFeedProps> = ({ 
+  onFrame, 
+  onFaceDetection,
+  onEngagementUpdate 
+}) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isActive, setIsActive] = useState(false);
@@ -72,7 +77,6 @@ const CameraFeed: React.FC<CameraFeedProps> = ({ onFrame, onFaceDetection }) => 
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
 
-      // Clear previous drawings
       context.clearRect(0, 0, canvas.width, canvas.height);
       context.drawImage(video, 0, 0);
 
@@ -84,42 +88,24 @@ const CameraFeed: React.FC<CameraFeedProps> = ({ onFrame, onFaceDetection }) => 
         if (result.faces && result.faces.length > 0) {
           setFaceDetected(true);
           
-          // Only draw frame and label if attendance hasn't been marked
           if (!attendanceMarked) {
-            // Draw rectangle for each detected face
-            const faceWidth = canvas.width * 0.5;
-            const faceHeight = canvas.height * 0.5;
-            const x = (canvas.width - faceWidth) / 2;
-            const y = (canvas.height - faceHeight) / 2;
-
             const isKnownFace = result.faces[0] !== "Unknown";
-            context.strokeStyle = isKnownFace ? "#22c55e" : "#ef4444";
-            context.lineWidth = 3;
-            context.strokeRect(x, y, faceWidth, faceHeight);
-
-            // Draw name label above the frame
-            const name = result.faces[0];
-            setCurrentName(name);
-            context.fillStyle = isKnownFace ? "#22c55e" : "#ef4444";
-            context.font = "24px Arial";
-            context.textAlign = "center";
-            context.fillText(name, x + faceWidth / 2, y - 10);
-
-            // Mark attendance if face is recognized and not already marked
-            if (isKnownFace && !attendanceMarked) {
+            if (isKnownFace) {
               onFaceDetection(result.faces);
               setAttendanceMarked(true);
-              toast({
-                title: "Attendance Marked",
-                description: `Welcome ${name}! Your attendance has been recorded.`,
-                duration: 5000,
-              });
+              setCurrentName(result.faces[0]);
             }
           }
         } else {
           setFaceDetected(false);
           setCurrentName("");
         }
+
+        // Update engagement
+        if (onEngagementUpdate && result.engagement !== undefined) {
+          onEngagementUpdate(result.engagement, result.remarks || "");
+        }
+
       } catch (error) {
         console.error("Error processing frame:", error);
       }
@@ -127,10 +113,10 @@ const CameraFeed: React.FC<CameraFeedProps> = ({ onFrame, onFaceDetection }) => 
 
     const interval = setInterval(captureFrame, 1000);
     return () => clearInterval(interval);
-  }, [isActive, onFrame, onFaceDetection, attendanceMarked, toast]);
+  }, [isActive, onFrame, onFaceDetection, attendanceMarked, toast, onEngagementUpdate]);
 
   return (
-    <Card className="p-4 w-full max-w-2xl mx-auto bg-white shadow-lg animate-fadeIn">
+    <Card className="p-4 w-full bg-white/80 backdrop-blur-sm shadow-xl animate-fadeIn">
       <div className="relative">
         <canvas
           ref={canvasRef}
@@ -145,32 +131,30 @@ const CameraFeed: React.FC<CameraFeedProps> = ({ onFrame, onFaceDetection }) => 
         
         <div className="absolute top-4 right-4 flex gap-2">
           {isActive && (
-            <>
-              <div className={`px-3 py-1 rounded-full flex items-center gap-2 ${
-                attendanceMarked 
-                  ? "bg-green-500 text-white"
-                  : faceDetected 
-                    ? "bg-yellow-500 text-white"
-                    : "bg-gray-500 text-white"
-              }`}>
-                {attendanceMarked ? (
-                  <>
-                    <CheckCircle className="w-4 h-4" />
-                    <span className="text-sm">Marked: {currentName}</span>
-                  </>
-                ) : faceDetected ? (
-                  <>
-                    <AlertCircle className="w-4 h-4" />
-                    <span className="text-sm">Face Detected</span>
-                  </>
-                ) : (
-                  <>
-                    <Camera className="w-4 h-4" />
-                    <span className="text-sm">Scanning</span>
-                  </>
-                )}
-              </div>
-            </>
+            <div className={`px-3 py-1 rounded-full flex items-center gap-2 ${
+              attendanceMarked 
+                ? "bg-green-500 text-white"
+                : faceDetected 
+                  ? "bg-yellow-500 text-white"
+                  : "bg-gray-500 text-white"
+            }`}>
+              {attendanceMarked ? (
+                <>
+                  <CheckCircle className="w-4 h-4" />
+                  <span className="text-sm">Marked: {currentName}</span>
+                </>
+              ) : faceDetected ? (
+                <>
+                  <AlertCircle className="w-4 h-4" />
+                  <span className="text-sm">Face Detected</span>
+                </>
+              ) : (
+                <>
+                  <Camera className="w-4 h-4" />
+                  <span className="text-sm">Scanning</span>
+                </>
+              )}
+            </div>
           )}
         </div>
       </div>

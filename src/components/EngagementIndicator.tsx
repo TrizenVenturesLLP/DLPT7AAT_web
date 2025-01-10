@@ -1,26 +1,33 @@
 import React from "react";
 import { Card } from "@/components/ui/card";
-import { Brain, Focus } from "lucide-react";
+import { Brain, Focus, AlertTriangle, CheckCircle } from "lucide-react";
 
 interface EngagementIndicatorProps {
   engagement: number;
+  remarks?: string;
 }
 
-const EngagementIndicator: React.FC<EngagementIndicatorProps> = ({ engagement }) => {
+const EngagementIndicator: React.FC<EngagementIndicatorProps> = ({ engagement, remarks }) => {
   const getEngagementColor = (level: number) => {
     if (level >= 80) return "bg-green-500";
     if (level >= 60) return "bg-yellow-500";
     return "bg-red-500";
   };
 
+  const getEngagementIcon = (level: number) => {
+    if (level >= 80) return <CheckCircle className="w-5 h-5 text-green-500" />;
+    if (level >= 60) return <Focus className="w-5 h-5 text-yellow-500" />;
+    return <AlertTriangle className="w-5 h-5 text-red-500" />;
+  };
+
   return (
-    <Card className="p-4 bg-white shadow-lg animate-fadeIn">
-      <div className="flex items-center justify-between mb-2">
+    <Card className="p-4 bg-white/80 backdrop-blur-sm shadow-lg animate-fadeIn">
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Brain className="w-5 h-5 text-primary" />
           <h3 className="font-semibold text-gray-700">Engagement Level</h3>
         </div>
-        <Focus className="w-5 h-5 text-gray-400" />
+        {getEngagementIcon(engagement)}
       </div>
       
       <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
@@ -34,6 +41,12 @@ const EngagementIndicator: React.FC<EngagementIndicatorProps> = ({ engagement })
         <span>Current Level</span>
         <span className="font-medium">{engagement}%</span>
       </div>
+
+      {remarks && (
+        <div className="mt-4 p-3 rounded-lg bg-gray-50 border border-gray-200">
+          <p className="text-sm text-gray-600">{remarks}</p>
+        </div>
+      )}
     </Card>
   );
 };
