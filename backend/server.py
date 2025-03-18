@@ -6,10 +6,7 @@ import numpy as np
 import os
 import base64
 from datetime import date
-import xlwt
-from xlwt import Workbook
-import xlrd
-from xlutils.copy import copy as xl_copy
+from openpyxl import Workbook, load_workbook
 from gaze_tracking import GazeTracking
 
 app = Flask(__name__)
@@ -98,31 +95,20 @@ def process_frame():
 def update_attendance(name, engagement, remarks):
     try:
         today = date.today().strftime("%Y-%m-%d")
-        filename = "attendance.xls"
+        filename = "attendance.xlsx"
         
         if not os.path.exists(filename):
             wb = Workbook()
-            sheet = wb.add_sheet('Attendance')
-            sheet.write(0, 0, 'Date')
-            sheet.write(0, 1, 'Name')
-            sheet.write(0, 2, 'Status')
-            sheet.write(0, 3, 'Engagement')
-            sheet.write(0, 4, 'Remarks')
+            sheet = wb.active
+            sheet.title = "Attendance"
+            sheet.append(["Date", "Name", "Status", "Engagement", "Remarks"])
             wb.save(filename)
-        
-        rb = xlrd.open_workbook(filename, formatting_info=True)
-        wb = xl_copy(rb)
-        sheet = wb.get_sheet(0)
-        
-        row = rb.sheet_by_index(0).nrows
-        sheet.write(row, 0, today)
-        sheet.write(row, 1, name)
-        sheet.write(row, 2, 'Present')
-        sheet.write(row, 3, engagement)
-        sheet.write(row, 4, remarks)
-        
+
+        wb = load_workbook(filename)
+        sheet = wb.active
+        sheet.append([today, name, "Present", engagement, remarks])  # Append new data
         wb.save(filename)
-        
+
     except Exception as e:
         print(f"Error updating attendance: {e}")
 
@@ -130,10 +116,10 @@ def update_attendance(name, engagement, remarks):
 def download_attendance():
     try:
         return send_file(
-            'attendance.xls',
-            mimetype='application/vnd.ms-excel',
+            'attendance.xlsx',
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             as_attachment=True,
-            download_name=f'attendance_{date.today().strftime("%Y-%m-%d")}.xls'
+            download_name=f'attendance_{date.today().strftime("%Y-%m-%d")}.xlsx'
         )
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -141,22 +127,22 @@ def download_attendance():
 @app.route('/api/get-attendance', methods=['GET'])
 def get_attendance():
     try:
-        if not os.path.exists('attendance.xls'):
+        if not os.path.exists('attendance.xlsx'):
             return jsonify([])
-            
-        wb = xlrd.open_workbook('attendance.xls')
-        sheet = wb.sheet_by_index(0)
-        
+
+        wb = load_workbook('attendance.xlsx')
+        sheet = wb.active
+
         data = []
-        for row in range(1, sheet.nrows):
+        for row in sheet.iter_rows(min_row=2, values_only=True):  # Skip header
             data.append({
-                'date': sheet.cell_value(row, 0),
-                'name': sheet.cell_value(row, 1),
-                'status': sheet.cell_value(row, 2),
-                'engagement': sheet.cell_value(row, 3),
-                'remarks': sheet.cell_value(row, 4)
+                'date': row[0],
+                'name': row[1],
+                'status': row[2],
+                'engagement': row[3],
+                'remarks': row[4]
             })
-            
+
         return jsonify(data)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
